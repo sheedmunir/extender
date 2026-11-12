@@ -1,0 +1,13 @@
+# Local test fixture created by the web tests; never copy to the router.
+web/passwd
+
+# Graphify local cache (the graph itself is tracked).
+graphify-out/cache/
+
+# Dated graphify backup snapshots; the live graph sits at graphify-out/ root.
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+
+# Editor / OS noise
+*.swp
+*~
+.DS_Store

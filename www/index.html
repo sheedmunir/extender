@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Extender</title>
+<style>
+  /* Design tokens. Primitive values first, semantic names second: change a
+     semantic token, never a rule, when shifting the look. */
+  :root{
+    /* primitive */
+    --c-charcoal:#36454f; --c-slate:#708090; --c-gray-300:#d3d3d3;
+    --c-white:#ffffff; --c-paper:#f7f7f5; --c-hover:#f2f4f5;
+    --c-red:#b3261e; --c-red-bg:#fee2e2; --c-red-bg-hover:#fecaca;
+    --c-green:#2f6f4f; --c-green-toggle:#5fdd54;
+    /* semantic */
+    --bg:var(--c-paper); --card:var(--c-white); --fg:var(--c-charcoal);
+    --muted:var(--c-slate); --line:var(--c-gray-300);
+    --accent:var(--c-charcoal); --accent-fg:var(--c-white);
+    --danger:var(--c-red); --danger-bg:var(--c-red-bg);
+    --danger-bg-hover:var(--c-red-bg-hover);
+    --ok:var(--c-green); --hover:var(--c-hover); --toggle-on:var(--c-green-toggle);
+    /* space */
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
+    /* radius */
+    --r-sm:8px; --r-md:12px; --r-pill:999px;
+    /* type */
+    --fs-xs:12px; --fs-sm:13px; --fs-md:14px; --fs-lg:16px;
+    --fs-xl:20px; --fs-2xl:24px;
+    /* touch target */
+    --tap:44px;
+  }
+  *{box-sizing:border-box}
+  body{font-family:"DejaVu Sans",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:var(--bg);color:var(--fg);margin:0;padding:var(--sp-6) var(--sp-4)}
+  .wrap{width:100%;max-width:620px;margin:0 auto}
+  h1{font-size:var(--fs-2xl);font-weight:700;letter-spacing:-0.01em;margin:0 0 var(--sp-1)}
+  h2{font-size:var(--fs-lg);margin:0;font-weight:700}
+  .sub{color:var(--muted);font-size:var(--fs-md);line-height:1.5;margin:0 0 var(--sp-5)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-5);margin-bottom:var(--sp-4)}
+  .narrow{max-width:400px;margin-left:auto;margin-right:auto}
+  label{display:block;font-size:var(--fs-md);color:var(--muted);margin:var(--sp-3) 0 var(--sp-1)}
+  label:first-of-type{margin-top:0}
+  input[type=text],input[type=password]{width:100%;padding:11px var(--sp-3);font-size:var(--fs-lg);border:1px solid var(--line);border-radius:var(--r-sm);background:var(--card);color:var(--fg)}
+  input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #loginError{color:var(--danger);font-size:var(--fs-md);min-height:20px;margin:var(--sp-3) 0 0}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-4)}
+  .topbar h1{margin-bottom:2px}
+  .topbar .sub{margin:0}
+  .tabs{display:flex;gap:var(--sp-1);background:var(--line);border-radius:var(--r-md);padding:3px;margin-bottom:var(--sp-4)}
+  .tab{flex:1;background:transparent;color:var(--fg);font-weight:400;border-radius:var(--r-sm);min-height:40px}
+  .tab[aria-selected=true]{background:var(--card);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .head{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+  .head h2{flex:1;min-width:0;display:flex;align-items:center;gap:var(--sp-2);margin:0}
+  .head-actions{display:flex;align-items:center;gap:var(--sp-2);flex:none;margin-left:auto}
+  .pane-title{margin:0 0 var(--sp-3)}
+  /* Field primitives: label, input+actions, message. Stacking is the default. */
+  .fields{display:flex;flex-direction:column;gap:var(--sp-4)}
+  .field{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+  .field-label{margin:0;font-size:var(--fs-sm);color:var(--muted)}
+  .field-row{display:flex;gap:var(--sp-2);align-items:center;min-width:0}
+  .field-row input{flex:1;min-width:0}
+  .field-msg{margin:0;font-size:var(--fs-xs);color:var(--muted);min-height:16px}
+  .acc-body{display:none;margin-top:var(--sp-3);border-top:1px solid var(--line);padding-top:var(--sp-3)}
+  .switch-label{flex:1;margin:0}
+  .acc-toggle{display:flex;width:100%;align-items:center;gap:var(--sp-2);padding:var(--sp-1) 0;border:none;background:none;font:inherit;font-weight:700;color:inherit;text-align:left;cursor:pointer;border-radius:var(--r-sm)}
+  .acc-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .acc-arrow{display:inline-flex;align-items:center;color:var(--muted);transition:transform .15s}
+  .acc-toggle[aria-expanded="true"] .acc-arrow{transform:rotate(180deg)}
+  .muted{color:var(--muted);font-size:var(--fs-sm);margin:var(--sp-2) 0 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse}
+  td{padding:10px var(--sp-2);border-bottom:1px solid var(--line);font-size:var(--fs-md);vertical-align:middle;word-break:break-word}
+  tr:last-child td{border-bottom:none}
+  td:first-child{color:var(--muted)}
+  td:last-child{text-align:right}
+  #devices td:first-child{color:var(--fg);font-weight:700}
+  .seg{display:flex;gap:var(--sp-2);margin:var(--sp-3) 0}
+  .seg-btn{flex:1;background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:400}
+  .seg-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}
+  .row{display:flex;gap:var(--sp-2);margin-top:var(--sp-3)}
+  .row button{flex:1}
+  .row-actions{display:flex;gap:var(--sp-2);justify-content:flex-end;flex-wrap:wrap}
+  .check{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-md);color:var(--muted);margin-top:10px}
+  .check input{width:auto;min-height:0}
+  .hidden{display:none}
+  #pwTitle{font-size:var(--fs-md);margin:var(--sp-4) 0 0;color:var(--fg);font-weight:700}
+  #connectLine{min-height:20px}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#1a1e21;--card:#23282c;--fg:#e8eaeb;--muted:#9aa8b3;--line:#3d4750;
+      --accent:#e8eaeb;--accent-fg:#1a1e21;--danger:#ff8a80;
+      --danger-bg:rgba(255,138,128,.14);--danger-bg-hover:rgba(255,138,128,.22);
+      --ok:#8fd3ac;--hover:#2b3237;--toggle-on:var(--c-green)}
+  }
+  /* Phones and narrow windows: one column, action always reachable. */
+  @media(max-width:640px){
+    body{padding:var(--sp-5) var(--sp-4) var(--sp-6)}
+    .card{padding:var(--sp-4);border-radius:10px}
+    h1{font-size:var(--fs-xl)}
+    h2,.head h2{font-size:15px}
+    .tabs{gap:2px}
+    .tab{padding:0 var(--sp-2)}
+    .head{gap:var(--sp-2)}
+    .btn.btn-sm{min-height:var(--tap)}
+    .seg{gap:var(--sp-2)}
+    .seg-btn{padding:0 var(--sp-2);min-height:var(--tap)}
+    /* Status: label left, value right; the value may wrap. */
+    #box table,#box tbody{display:block;width:100%}
+    #box tr{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-3);padding:var(--sp-2) 0;border-bottom:1px solid var(--line)}
+    #box tr:first-child{padding-top:0}
+    #box tr:last-child{padding-bottom:0;border-bottom:none}
+    #box td{border:none;padding:0;text-align:left;display:block;min-width:0}
+    #box td:first-child{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;flex:none}
+    #box td:last-child{white-space:normal;text-align:right;min-width:0;overflow-wrap:anywhere}
+    /* Devices: name on one line, address below it. */
+    #devices table,#devices tbody,#devices tr{display:block;width:100%}
+    #devices tr.hdr{display:none}
+    #devices tr{padding:var(--sp-2) 0;border-bottom:1px solid var(--line)}
+    #devices tr:last-child{border-bottom:none;padding-bottom:0}
+    #devices td{border:none;padding:0;text-align:left;display:block}
+    #devices td:first-child{font-size:15px}
+    #devices td:last-child{color:var(--muted);font-size:var(--fs-sm);margin-top:2px;overflow-wrap:anywhere}
+    /* Scan + saved: drop the detail columns, keep the action. */
+    #scanBox tr:first-child,#nets tr:first-child{display:none}
+    #scanBox td:nth-child(2),#scanBox td:nth-child(3),#nets td:nth-child(2){display:none}
+    #scanBox table,#scanBox tbody,#scanBox tr,#nets table,#nets tbody,#nets tr{display:block;width:100%}
+    #scanBox tr,#nets tr{padding:var(--sp-3) 0;border-bottom:1px solid var(--line)}
+    #scanBox tr:last-child,#nets tr:last-child{border-bottom:none;padding-bottom:0}
+    #scanBox td,#nets td{border:none;padding:0;text-align:left;display:block}
+    /* Scan row: SSID takes the line, Use button pinned right. */
+    #scanBox tr{display:flex;align-items:center;gap:var(--sp-3)}
+    #scanBox td:first-child{flex:1;min-width:0}
+    #scanBox td:last-child{margin:0;flex:none}
+    #nets td:last-child{margin-top:var(--sp-2)}
+    #nets .row-actions{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2)}
+  }
+  /* Very narrow: inputs take their own line, palette becomes a sheet. */
+  @media(max-width:480px){
+    .head:not(.acc){flex-wrap:wrap}
+    .head-actions .btn{font-size:var(--fs-sm);padding:0 var(--sp-3)}
+    .field-row{flex-wrap:wrap}
+    .field-row input{flex:1 1 100%}
+    .field-row .btn{flex:1}
+    .palette-panel{margin:0;width:100%;max-width:none;min-height:100%;border-radius:0;padding:var(--sp-4);box-shadow:none}
+    .palette-header{position:sticky;top:0;background:var(--card);padding-bottom:var(--sp-2)}
+  }
+  /* Toggle switch for AP on/off */
+  .switch{font-size:17px;position:relative;display:inline-block;width:62px;height:35px}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--card);transition:.4s;border-radius:var(--r-pill);border:1px solid var(--line)}
+  .slider:before{position:absolute;content:"";height:1.9em;width:1.9em;border-radius:50%;left:1.2px;top:0;bottom:0;background:var(--c-white);box-shadow:0 2px 5px rgba(0,0,0,.35);transition:.4s}
+  input:checked + .slider{background-color:var(--toggle-on);border:1px solid transparent}
+  input:checked + .slider:before{transform:translateX(1.5em)}
+  .switch-label{font-size:var(--fs-sm);color:var(--muted);margin-right:var(--sp-2)}
+  /* Buttons: the element itself carries the border, so a button can never
+     degrade into plain text, whoever emits the markup. */
+  .tab,.seg-btn{font:inherit;cursor:pointer}
+  .tab{border:none}
+  .btn{
+    --btn-bg:transparent;--btn-fg:var(--fg);--btn-line:var(--line);
+    display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);
+    min-height:var(--tap);padding:0 var(--sp-4);
+    font:inherit;font-size:var(--fs-md);font-weight:600;
+    color:var(--btn-fg);background:var(--btn-bg);
+    border:1.5px solid var(--btn-line);border-radius:var(--r-sm);
+    cursor:pointer;white-space:nowrap;text-decoration:none;
+    transition:background .15s,border-color .15s,color .15s,transform .06s
+  }
+  .btn:hover{border-color:var(--accent)}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{--btn-bg:var(--accent);--btn-fg:var(--accent-fg);--btn-line:var(--accent)}
+  .btn-primary:hover{--btn-bg:var(--accent);opacity:.9}
+  .btn-secondary{--btn-bg:transparent;--btn-fg:var(--accent);--btn-line:var(--accent)}
+  .btn-secondary:hover{--btn-bg:var(--hover)}
+  .btn-danger{--btn-bg:var(--danger-bg);--btn-fg:var(--danger);--btn-line:var(--danger-bg-hover)}
+  .btn-danger:hover{--btn-bg:var(--danger-bg-hover);--btn-line:var(--danger)}
+  .btn-ghost{--btn-line:transparent;--btn-bg:transparent;--btn-fg:var(--muted)}
+  .btn-ghost:hover{--btn-bg:var(--hover);--btn-fg:var(--fg)}
+  .btn-sm{min-height:36px;padding:0 var(--sp-3);font-size:var(--fs-sm);font-weight:500}
+  .btn-block{width:100%;margin-top:var(--sp-4)}
+  .btn-icon{width:40px;min-height:40px;padding:0;font-size:var(--fs-lg);line-height:1}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .refresh-spinner{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:refreshSpin .8s linear infinite;margin-right:6px;vertical-align:middle}
+  @keyframes refreshSpin{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){
+    .btn{transition:none}
+    .acc-arrow{transition:none}
+    .refresh-spinner{animation:none}
+    .palette-panel{animation:none}
+  }
+  /* Command palette */
+  .palette{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:none;overflow:auto}
+  .palette-panel{background:var(--card);margin:8% auto;width:90%;max-width:520px;border-radius:var(--r-md);padding:var(--sp-5);box-shadow:0 8px 24px rgba(0,0,0,.15);animation:slideDown .2s ease}
+  @keyframes slideDown{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .palette-header{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+  .palette-header h3{margin:0;font-size:17px;font-weight:700}
+  .palette-item{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:10px var(--sp-3);border:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:6px;cursor:pointer;background:var(--card)}
+  .palette-item:hover{background:var(--hover);border-color:var(--accent)}
+  .palette-item-label{font-size:var(--fs-md)}
+  .palette-item-desc{font-size:var(--fs-xs);color:var(--muted)}
+  .palette-message{margin:0;font-size:15px;line-height:1.5;color:var(--fg)}
+  .palette-divider{height:1px;background:var(--line);margin:var(--sp-2) 0}
+  .palette-footer{margin-top:var(--sp-3);padding-top:var(--sp-3);border-top:1px solid var(--line)}
+  .palette-footer button{width:100%}
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div id="loginView">
+      <h1 style="text-align:center">Extender</h1>
+      <section class="card narrow" aria-label="Sign in">
+        <form id="loginForm" novalidate>
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" required>
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required>
+          <button type="submit" id="loginBtn" class="btn btn-primary btn-block">Login</button>
+          <p id="loginError" role="alert" aria-live="polite"></p>
+        </form>
+      </section>
+    </div>
+
+    <div id="appView" class="hidden">
+      <header class="topbar">
+        <div>
+          <h1>Extender</h1>
+          <p class="sub" id="sessionLine">Signed in.</p>
+        </div>
+        <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+      </header>
+
+      <nav class="tabs" role="tablist" aria-label="Extender sections">
+        <button type="button" class="tab" id="tabDashboard" role="tab" aria-selected="true" aria-controls="panelDashboard">Dashboard</button>
+        <button type="button" class="tab" id="tabInternet" role="tab" aria-selected="false" aria-controls="panelInternet">Internet</button>
+      </nav>
+
+      <section id="panelDashboard" role="tabpanel" aria-labelledby="tabDashboard">
+        <div class="card">
+          <div class="head">
+            <h2>Status</h2>
+            <div class="head-actions">
+              <button type="button" id="refreshBtn" class="btn btn-secondary btn-sm"><span class="refresh-spinner" style="display:none"></span>Refresh</button>
+            </div>
+          </div>
+          <div id="box"></div>
+          <p class="muted" id="statusLine">Loading…</p>
+        </div>
+
+        <div class="card">
+          <div class="head">
+            <h2>Devices</h2>
+            <div class="head-actions"><span class="muted" id="devCount"></span></div>
+          </div>
+          <div id="devices"></div>
+          <p class="muted" id="devicesLine">Loading…</p>
+        </div>
+      </section>
+
+      <section id="panelInternet" role="tabpanel" aria-labelledby="tabInternet" class="hidden">
+        <div class="card">
+          <div class="head" id="connectUplinkHead">
+            <h2><button type="button" class="acc-toggle" aria-expanded="false" aria-controls="connectUplinkBody">Connect to uplink <span class="acc-arrow" aria-hidden="true"><svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h2>
+          </div>
+          <div id="connectUplinkBody" class="acc-body">
+            <p class="muted" style="margin-top:0">Pick a nearby WiFi or a saved one. On success it is saved and extending restarts.</p>
+            <div class="seg" role="group" aria-label="How to choose the uplink">
+              <button type="button" id="modeScan" class="seg-btn active" aria-pressed="true">Nearby WiFi</button>
+              <button type="button" id="modeSaved" class="seg-btn" aria-pressed="false">From saved</button>
+            </div>
+
+            <div id="scanPane">
+              <div id="scanBox"></div>
+              <p class="muted" id="scanLine" aria-live="polite">Tap Scan to look for nearby WiFi.</p>
+
+              <div id="pwPane" class="hidden">
+                <p id="pwTitle"></p>
+                <div class="field">
+                  <label class="field-label" for="pw">Password</label>
+                  <input type="password" id="pw" autocomplete="off" spellcheck="false">
+                  <label class="check" for="pwShow"><input type="checkbox" id="pwShow"> Show password</label>
+                </div>
+                <div class="row">
+                  <button type="button" id="connectBtn" class="btn btn-primary">Connect</button>
+                  <button type="button" id="pwCancel" class="btn btn-secondary">Cancel</button>
+                </div>
+              </div>
+              <p class="muted" id="connectLine" aria-live="polite"></p>
+            </div>
+
+            <div id="savedPane" class="hidden">
+              <h2 class="pane-title">Saved networks</h2>
+              <div id="nets"></div>
+              <p class="muted" id="netsLine" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="head">
+            <h2>Test connection</h2>
+            <div class="head-actions">
+              <button type="button" id="pingBtn" class="btn btn-secondary">Run ping test</button>
+            </div>
+          </div>
+          <div id="pingBox"></div>
+          <p class="muted" id="pingLine" aria-live="polite"></p>
+        </div>
+
+        <div class="card">
+          <div class="head" id="apToggleHead">
+            <h2><button type="button" class="acc-toggle" aria-expanded="false" aria-controls="apToggleBody">WiFi AP On/Off <span class="acc-arrow" aria-hidden="true"><svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h2>
+          </div>
+          <div id="apToggleBody" class="acc-body">
+            <div class="fields">
+              <div class="field">
+                <div class="field-row">
+                  <span class="switch-label">2.4GHz AP (wl0.1)</span>
+                  <label class="switch">
+                    <input type="checkbox" id="swAp2g">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <p class="field-msg" id="msgAp2g"></p>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <span class="switch-label">5GHz AP (wl1)</span>
+                  <label class="switch">
+                    <input type="checkbox" id="swAp5g">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <p class="field-msg" id="msgAp5g"></p>
+              </div>
+            </div>
+            <p class="field-msg">No persistence — state resets when the extender restarts.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="head" id="changeSSIDHead">
+            <h2><button type="button" class="acc-toggle" aria-expanded="false" aria-controls="changeSSIDBody">SSID <span class="acc-arrow" aria-hidden="true"><svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h2>
+            <div class="head-actions">
+              <button type="button" id="btnRestoreSsidHeader" class="btn btn-danger btn-sm">Restore</button>
+            </div>
+          </div>
+          <div id="changeSSIDBody" class="acc-body">
+            <div class="fields">
+              <div class="field">
+                <label class="field-label" for="ssid2g">2.4GHz AP (wl0.1)</label>
+                <div class="field-row">
+                  <input type="text" id="ssid2g" placeholder="new SSID">
+                  <button type="button" id="rename2g" data-iface="wl0.1" class="btn btn-primary">Rename</button>
+                </div>
+                <p class="field-msg" id="rename2gMsg"></p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="wpa2g">2.4GHz WiFi password (wl0.1)</label>
+                <div class="field-row">
+                  <input type="password" id="wpa2g" placeholder="8-63 chars">
+                  <button type="button" id="btnWpa2gShow" class="btn btn-secondary btn-sm">Show</button>
+                  <button type="button" id="btnWpa2g" class="btn btn-primary">Apply</button>
+                </div>
+                <p class="field-msg" id="msgWpa2g"></p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="ssid5g">5GHz AP (wl1)</label>
+                <div class="field-row">
+                  <input type="text" id="ssid5g" placeholder="new SSID">
+                  <button type="button" id="rename5g" data-iface="wl1" class="btn btn-primary">Rename</button>
+                </div>
+                <p class="field-msg" id="rename5gMsg"></p>
+              </div>
+            </div>
+            <p class="field-msg">Renaming disconnects all clients on that AP.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="head" id="hostmacHead">
+            <h2><button type="button" class="acc-toggle" aria-expanded="false" aria-controls="hostmacBody">Hostname &amp; MAC <span class="acc-arrow" aria-hidden="true"><svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h2>
+            <div class="head-actions">
+              <button type="button" id="btnRestoreHostmacHeader" class="btn btn-danger btn-sm">Restore</button>
+            </div>
+          </div>
+          <div id="hostmacBody" class="acc-body">
+            <div class="fields">
+              <div class="field">
+                <label class="field-label" for="hostname">Router hostname</label>
+                <div class="field-row">
+                  <input type="text" id="hostname" placeholder="current: ...">
+                  <button type="button" id="btnHostname" data-field="hostname" class="btn btn-primary">Apply</button>
+                </div>
+                <p class="field-msg" id="msgHostname"></p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="mac5g">wl1 MAC (5GHz AP)</label>
+                <div class="field-row">
+                  <input type="text" id="mac5g" placeholder="current: ...">
+                  <button type="button" id="btnMac5g" data-field="mac5g" class="btn btn-primary">Apply</button>
+                </div>
+                <p class="field-msg" id="msgMac5g"></p>
+              </div>
+            </div>
+            <p class="field-msg">MAC changes disconnect clients on that interface.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var loginView=document.getElementById('loginView');
+  var appView=document.getElementById('appView');
+  var form=document.getElementById('loginForm');
+  var err=document.getElementById('loginError');
+  var box=document.getElementById('box');
+  var line=document.getElementById('statusLine');
+  var devicesEl=document.getElementById('devices');
+  var devicesLine=document.getElementById('devicesLine');
+  var devCount=document.getElementById('devCount');
+  var sessionLine=document.getElementById('sessionLine');
+  var netsEl=document.getElementById('nets');
+  var netsLine=document.getElementById('netsLine');
+  var scanBox=document.getElementById('scanBox');
+  var scanLine=document.getElementById('scanLine');
+  var pwPane=document.getElementById('pwPane');
+  var pwTitle=document.getElementById('pwTitle');
+  var connectLine=document.getElementById('connectLine');
+  var pingBox=document.getElementById('pingBox');
+  var pingLine=document.getElementById('pingLine');
+  var tabDashboard=document.getElementById('tabDashboard');
+  var tabInternet=document.getElementById('tabInternet');
+  var panelDashboard=document.getElementById('panelDashboard');
+  var panelInternet=document.getElementById('panelInternet');
+  var modeScan=document.getElementById('modeScan');
+  var modeSaved=document.getElementById('modeSaved');
+  var scanPane=document.getElementById('scanPane');
+  var savedPane=document.getElementById('savedPane');
+  var ssid2g=document.getElementById('ssid2g');
+  var ssid5g=document.getElementById('ssid5g');
+  var rename2gMsg=document.getElementById('rename2gMsg');
+  var rename5gMsg=document.getElementById('rename5gMsg');
+  var hostname=document.getElementById('hostname');
+  var mac5g=document.getElementById('mac5g');
+  var msgHostname=document.getElementById('msgHostname');
+  var msgMac5g=document.getElementById('msgMac5g');
+  var wpa2g=document.getElementById('wpa2g');
+  var btnWpa2g=document.getElementById('btnWpa2g');
+  var msgWpa2g=document.getElementById('msgWpa2g');
+  var btnWpa2gShow=document.getElementById('btnWpa2gShow');
+  var swAp2g=document.getElementById('swAp2g');
+  var swAp5g=document.getElementById('swAp5g');
+  var apToggleHead=document.getElementById('apToggleHead');
+  var apToggleArrow=document.getElementById('apToggleArrow');
+  var apToggleBody=document.getElementById('apToggleBody');
+  var ap2gState=false;
+  var ap5gState=false;
+
+  var signedIn=false, netsLoaded=false, pending=null, timer=null, scanning=false;
+
+  function showLogin(msg){
+    signedIn=false; netsLoaded=false;
+    loginView.classList.remove('hidden');
+    appView.classList.add('hidden');
+    err.textContent=msg||'';
+    if(timer){clearInterval(timer);timer=null;}
+  }
+  function showApp(){
+    signedIn=true;
+    loginView.classList.add('hidden');
+    appView.classList.remove('hidden');
+    if(!timer){timer=setInterval(function(){ if(signedIn&&!document.hidden) loadStatus(); },20000);}
+  }
+  function wireAccordion(headId, bodyId){
+    var head=document.getElementById(headId);
+    if(!head) return;
+    var toggle=head.querySelector('.acc-toggle');
+    var body=document.getElementById(bodyId);
+    if(!toggle||!body) return;
+    toggle.addEventListener('click',function(){
+      var open=body.style.display==='none'||!body.style.display;
+      body.style.display=open?'block':'none';
+      toggle.setAttribute('aria-expanded',open?'true':'false');
+    });
+  }
+  function guard(t){ if(t.indexOf('<table>')!==0){throw new Error('not-table');} return t; }
+
+  function loadStatus(){
+    return fetch('cgi-bin/status.cgi').then(function(r){
+      return r.text().then(function(t){return {status:r.status,ok:r.ok,text:t};});
+    }).then(function(res){
+      if(res===null)return;
+      if(res.status===401){showLogin('Session expired. Sign in again.');return null;}
+      if(!res.ok) throw new Error(res.status);
+      var t=bodyText(res.text);
+      box.innerHTML=guard(t);
+      line.textContent='Updated just now.';
+      line.style.color='var(--muted)';
+      showApp();
+      loadDevices();
+      loadCurrent();
+      // Parse AP state from status table rows
+      var m5=t.match(/5GHz AP[^<]*<\/td><td>([^()]*)\s*\((on|off)/);
+      var m2=t.match(/2\.4GHz AP[^<]*<\/td><td>([^()]*)\s*\((on|off)/);
+      if(m5){ap5gState=m5[2]==='on';swAp5g.checked=ap5gState;}
+      if(m2){ap2gState=m2[2]==='on';swAp2g.checked=ap2gState;}
+      // The row renders from cache; ask for a fresh answer in the background.
+      var inetRow=document.getElementById('inetRow');
+      if(inetRow){
+        var cells=inetRow.getElementsByTagName('td');
+        var value=cells[cells.length-1];
+        if(value&&value.textContent==='checking'){
+          fetch('cgi-bin/ping.cgi?inet=1').then(function(r){return r.ok?r.text():null;}).then(function(s){
+            if(s==='yes'||s==='no') value.textContent=s;
+          }).catch(function(){});
+        }
+      }
+    }).catch(function(){
+      line.textContent='Could not load status — showing the last values.';
+      line.style.color='var(--danger)';
+      if(!signedIn) showLogin('');
+    });
+  }
+
+  function loadCurrent(){
+    return fetch('cgi-bin/current.cgi').then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      if(!r.ok) throw new Error(r.status);
+      return r.text();
+    }).then(function(t){
+      if(t===null) return;
+      t.split('\n').forEach(function(line){
+        var eq=line.indexOf('=');
+        if(eq<0) return;
+        var key=line.substring(0,eq);
+        var val=line.substring(eq+1);
+        if(key==='hostname') hostname.placeholder='current: '+(val||'not configured');
+        if(key==='wl0_1_ssid') ssid2g.placeholder='current: '+(val||'…');
+        if(key==='wl1_ssid') ssid5g.placeholder='current: '+(val||'…');
+        if(key==='wl1_mac') mac5g.placeholder='current: '+(val||'…');
+      });
+    }).catch(function(){
+      // silent: current.cgi is a bonus, not critical
+    });
+  }
+
+  function loadDevices(){
+    return fetch('cgi-bin/devices.cgi').then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      if(!r.ok) throw new Error(r.status);
+      return r.text();
+    }).then(function(t){
+      if(t===null) return;
+      devicesEl.innerHTML=guard(t);
+      devicesLine.textContent='';
+      var n=devicesEl.querySelectorAll('[data-mac]').length;
+      devCount.textContent=n?((n===1)?'1 device':n+' devices'):'none';
+    }).catch(function(){
+      devicesLine.textContent='Could not load devices.';
+    });
+  }
+
+  function loadNets(force){
+    if(netsLoaded&&!force) return;
+    netsEl.innerHTML='';
+    netsLine.textContent='Loading saved networks…';
+    return fetch('cgi-bin/networks.cgi').then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      if(!r.ok) throw new Error(r.status);
+      return r.text();
+    }).then(function(t){
+      if(t===null) return;
+      netsEl.innerHTML=guard(t);
+      netsLine.textContent='';
+      netsLoaded=true;
+      bindNets();
+    }).catch(function(){
+      netsLine.textContent='Could not load saved networks.';
+    });
+  }
+  function bindNets(){
+    netsEl.querySelectorAll('[data-recon]').forEach(function(b){
+      b.addEventListener('click',function(){
+        if(!confirm('Reconnect? This restarts extending.')) return;
+        netsLine.textContent='Reconnecting…';
+        fetch('cgi-bin/reconnect.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=reconnect&n='+encodeURIComponent(b.getAttribute('data-recon'))})
+        .then(function(r){if(r.status===401){showLogin('Session expired. Sign in again.');return 'Session expired.';} if(!r.ok) throw new Error(r.status); return r.text();})
+        .then(function(msg){netsLine.textContent=msg;})
+        .catch(function(){netsLine.textContent='Could not reconnect.';});
+      });
+    });
+    netsEl.querySelectorAll('[data-del]').forEach(function(b){
+      b.addEventListener('click',function(){
+        if(!confirm('Delete this saved network?')) return;
+        fetch('cgi-bin/delete.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=delete&n='+encodeURIComponent(b.getAttribute('data-del'))})
+        .then(function(r){if(r.status===401){showLogin('Session expired. Sign in again.');throw new Error(401);} if(!r.ok) throw new Error(r.status); return loadNets(true);})
+        .catch(function(){netsLine.textContent='Could not delete.';});
+      });
+    });
+  }
+
+  function selectTab(which){
+    var d=which==='dashboard';
+    tabDashboard.setAttribute('aria-selected',d?'true':'false');
+    tabInternet.setAttribute('aria-selected',d?'false':'true');
+    panelDashboard.classList.toggle('hidden',!d);
+    panelInternet.classList.toggle('hidden',d);
+    if(d) loadStatus(); else loadNets(false);
+  }
+  tabDashboard.addEventListener('click',function(){selectTab('dashboard');});
+  tabInternet.addEventListener('click',function(){selectTab('internet');});
+
+  function selectMode(scan){
+    modeScan.classList.toggle('active',scan);
+    modeSaved.classList.toggle('active',!scan);
+    modeScan.setAttribute('aria-pressed',scan?'true':'false');
+    modeSaved.setAttribute('aria-pressed',scan?'false':'true');
+    scanPane.classList.toggle('hidden',!scan);
+    savedPane.classList.toggle('hidden',scan);
+    if(scan) runScan(); else loadNets(false);
+  }
+  modeScan.addEventListener('click',function(){selectMode(true);});
+  modeSaved.addEventListener('click',function(){selectMode(false);});
+
+  function runScan(){
+    if(scanning) return;
+    scanning=true;
+    scanBox.innerHTML='';
+    scanLine.textContent='Scanning… this takes up to 10 seconds.';
+    fetch('cgi-bin/scan.cgi').then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      if(!r.ok) throw new Error(r.status);
+      return r.text();
+    }).then(function(t){
+      if(t===null) return;
+      scanBox.innerHTML=guard(t);
+      scanLine.textContent='';
+      bindScan();
+    }).catch(function(){
+      scanLine.textContent='Could not scan.';
+    }).then(function(){scanning=false;});
+  }
+  function bindScan(){
+    scanBox.querySelectorAll('[data-ssid]').forEach(function(b){
+      b.addEventListener('click',function(){
+        var ssid=b.getAttribute('data-ssid');
+        var sec=b.getAttribute('data-sec');
+        connectLine.textContent='';
+        if(sec==='OPEN'){
+          if(confirm('Connect to the open network "'+ssid+'"? Anyone can join it.')) connect(ssid,'OPEN','');
+          return;
+        }
+        pending={ssid:ssid,sec:sec};
+        pwTitle.textContent='Password for "'+ssid+'"';
+        document.getElementById('pw').value='';
+        pwPane.classList.remove('hidden');
+        document.getElementById('pw').focus();
+      });
+    });
+  }
+  function connect(ssid,sec,pass){
+    connectLine.textContent='Connecting to "'+ssid+'"…';
+    fetch('cgi-bin/connect.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'ssid='+encodeURIComponent(ssid)+'&sec='+encodeURIComponent(sec)+'&pass='+encodeURIComponent(pass)})
+    .then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      return r.text().then(function(t){return {ok:r.ok,text:t};});
+    }).then(function(res){
+      if(res===null) return;
+      var msg=bodyText(res.text);
+      if(res.ok&&msg.indexOf('Saved ')===0){
+        pwPane.classList.add('hidden');
+        pending=null;
+        netsLoaded=false;
+        connectLine.textContent=msg+' This page comes back at the same address.';
+      }else{
+        connectLine.textContent=msg||'Could not connect.';
+      }
+    }).catch(function(){connectLine.textContent='Could not reach connect.cgi.';});
+  }
+  // Keeps a write action from firing twice; the label stays stable so the row
+  // does not jump while the request runs.
+  function busy(btn,label){
+    if(!btn) return function(){};
+    var old=btn.textContent;
+    btn.disabled=true;
+    btn.setAttribute('aria-busy','true');
+    if(label) btn.textContent=label;
+    return function(){ btn.disabled=false; btn.removeAttribute('aria-busy'); btn.textContent=old; };
+  }
+  function renameAP(btn){
+    var iface=btn.getAttribute('data-iface');
+    var input = iface==='wl0.1' ? ssid2g : ssid5g;
+    var msg = iface==='wl0.1' ? rename2gMsg : rename5gMsg;
+    var name=input.value.trim();
+    if(!name){msg.textContent='Enter a new SSID.';return;}
+    if(name.length>32){msg.textContent='SSID too long (max 32).';return;}
+    if(!confirm('Renaming will disconnect all clients on '+iface+'. Continue?'))return;
+    var done=busy(btn,'Renaming…');
+    msg.textContent='';
+    fetch('cgi-bin/rename.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'iface='+encodeURIComponent(iface)+'&ssid='+encodeURIComponent(name)})
+    .then(function(r){
+      if(r.status===401){done();showLogin('Session expired. Sign in again.');return null;}
+      if(!r.ok) throw new Error(r.status);
+      return r.text();
+    }).then(function(t){
+      if(t===null)return;
+      done();
+      if(t.indexOf('Renamed')===0){
+        msg.textContent=t;
+        msg.style.color='var(--ok)';
+        input.value='';
+        input.placeholder='current: '+(iface==='wl0.1'?'Ext':'Ext5G');
+        loadStatus();
+      }else{
+        msg.textContent=bodyText(t)||'Rename failed.';
+        msg.style.color='var(--err)';
+      }
+    }).catch(function(){
+      done();
+      msg.textContent='Could not reach rename.cgi.';
+      msg.style.color='var(--err)';
+    });
+  }
+  function applyCurrent(btn){
+    var field=btn.getAttribute('data-field');
+    var input, msg;
+    if(field==='hostname'){input=hostname;msg=msgHostname;}
+    else if(field==='mac5g'){input=mac5g;msg=msgMac5g;}
+    else return;
+    var val=input.value.trim();
+    if(!val){msg.textContent='Enter a value.';msg.style.color='var(--err)';return;}
+    var done=busy(btn,'Applying…');
+    msg.textContent='';
+    fetch('cgi-bin/hostname_mac.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:field+'='+encodeURIComponent(val)})
+    .then(function(r){
+      if(r.status===401){done();showLogin('Session expired. Sign in again.');return null;}
+      return r.text().then(function(t){return {ok:r.ok,text:t};});
+    }).then(function(res){
+      if(res===null)return;
+      done();
+      var t=bodyText(res.text);
+      if(res.ok){
+        msg.textContent=t||'Applied.';
+        msg.style.color='var(--ok)';
+        input.value='';
+        input.placeholder='current: …';
+        loadCurrent();
+        loadStatus();
+        // MAC changes only take effect after reconnecting to the uplink.
+        if(field==='mac5g')showReconnectNotice();
+      }else{
+        msg.textContent=t||'Apply failed.';
+        msg.style.color='var(--err)';
+      }
+    }).catch(function(){
+      done();
+      msg.textContent='Could not reach hostname_mac.cgi.';
+      msg.style.color='var(--err)';
+    });
+  }
+  function applyWPA(){
+    var val=wpa2g.value.trim();
+    if(!val){msgWpa2g.textContent='Enter a password.';msgWpa2g.style.color='var(--err)';return;}
+    if(val.length<8||val.length>63){msgWpa2g.textContent='A WiFi password has 8 to 63 characters.';msgWpa2g.style.color='var(--err)';return;}
+    var done=busy(btnWpa2g,'Applying…');
+    msgWpa2g.textContent='';
+    fetch('cgi-bin/wpa.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'wl0.1='+encodeURIComponent(val)})
+    .then(function(r){
+      if(r.status===401){done();showLogin('Session expired. Sign in again.');return null;}
+      return r.text().then(function(t){return {ok:r.ok,text:t};});
+    }).then(function(res){
+      if(res===null)return;
+      done();
+      var t=bodyText(res.text);
+      if(res.ok){
+        msgWpa2g.textContent=t||'Applied.';
+        msgWpa2g.style.color='var(--ok)';
+        wpa2g.value='';
+        showReconnectNotice();
+      }else{
+        msgWpa2g.textContent=t||'Apply failed.';
+        msgWpa2g.style.color='var(--err)';
+      }
+    }).catch(function(){
+      done();
+      msgWpa2g.textContent='Could not reach wpa.cgi.';
+      msgWpa2g.style.color='var(--err)';
+    });
+  }
+  function toggleAp(iface, sw, msgId, turnOn){
+    var target = turnOn ? 'on' : 'off';
+    sw.disabled=true;
+    document.getElementById(msgId).textContent='';
+    fetch('cgi-bin/wpa.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:iface+'_state='+encodeURIComponent(target)})
+    .then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');sw.disabled=false;return null;}
+      return r.text().then(function(t){return {ok:r.ok,text:t};});
+    }).then(function(res){
+      sw.disabled=false;
+      if(res===null)return;
+      var t=bodyText(res.text);
+      if(res.ok){
+        document.getElementById(msgId).textContent=iface+' is now '+target+'.';
+        document.getElementById(msgId).style.color='var(--ok)';
+        if(iface==='wl0.1')ap2gState=turnOn;
+        if(iface==='wl1')ap5gState=turnOn;
+        loadStatus();
+      }else{
+        sw.checked=!turnOn;
+        document.getElementById(msgId).textContent=t||'Toggle failed.';
+        document.getElementById(msgId).style.color='var(--err)';
+      }
+    }).catch(function(){
+      sw.checked=!turnOn;
+      sw.disabled=false;
+      document.getElementById(msgId).textContent='Could not reach wpa.cgi.';
+      document.getElementById(msgId).style.color='var(--err)';
+    });
+  }
+  var lastFocus=null;
+  function openPalette(id){
+    var el=document.getElementById(id);
+    lastFocus=document.activeElement;
+    el.style.display='block';
+    el.setAttribute('aria-hidden','false');
+    document.body.style.overflow='hidden';
+    var f=el.querySelector('button,input,[tabindex="0"]');
+    if(f)f.focus();
+  }
+  function togglePalette(id){
+    var el=document.getElementById(id);
+    if(el.style.display==='block') closePalette(id); else openPalette(id);
+  }
+  function closePalette(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    el.style.display='none';
+    el.setAttribute('aria-hidden','true');
+    var stillOpen=false;
+    var all=document.querySelectorAll('.palette');
+    for(var i=0;i<all.length;i++){ if(all[i].style.display==='block') stillOpen=true; }
+    if(!stillOpen) document.body.style.overflow='';
+    if(lastFocus&&lastFocus.focus){lastFocus.focus();lastFocus=null;}
+  }
+  // Esc closes the top palette; Tab stays inside it.
+  document.addEventListener('keydown',function(e){
+    var open=null, all=document.querySelectorAll('.palette');
+    for(var i=0;i<all.length;i++){ if(all[i].style.display==='block') open=all[i]; }
+    if(!open) return;
+    if(e.key==='Escape'){ e.preventDefault(); closePalette(open.id); return; }
+    if(e.key!=='Tab') return;
+    var f=open.querySelectorAll('button,[href],input,select,textarea,[tabindex="0"]');
+    if(!f.length) return;
+    var first=f[0], last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
+  });
+  function clearInput(inputId, placeholder){
+    var el=document.getElementById(inputId);
+    el.value='';
+    el.placeholder='current: '+(placeholder||'…');
+  }
+  function restoreSsid(iface, defaultName){
+    if(!confirm('Restore '+iface+' SSID to '+defaultName+'? Clients on that network will disconnect. Continue?'))return;
+    var errIds=iface==='wl1'?['rename5gMsg']:iface==='wl0.1'?['rename2gMsg']:['rename2gMsg','rename5gMsg'];
+    fetch('cgi-bin/hostname_mac.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'restore_ssid='+encodeURIComponent(iface)})
+    .then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      return r.text().then(function(t){return {ok:r.ok,text:t};});
+    }).then(function(res){
+      if(res===null)return;
+      var t=bodyText(res.text);
+      if(res.ok){
+        if(iface==='wl0.1'||iface==='all'){
+          clearInput('ssid2g','Ext');
+          document.getElementById('rename2gMsg').textContent='Restored 2.4GHz SSID to Ext.';
+          document.getElementById('rename2gMsg').style.color='var(--ok)';
+        }
+        if(iface==='wl1'||iface==='all'){
+          clearInput('ssid5g','Ext5G');
+          document.getElementById('rename5gMsg').textContent='Restored 5GHz SSID to Ext5G.';
+          document.getElementById('rename5gMsg').style.color='var(--ok)';
+        }
+        closePalette('paletteSsid');
+      }else{
+        errIds.forEach(function(id){
+          var el=document.getElementById(id);
+          el.textContent=t||'Restore failed.';
+          el.style.color='var(--err)';
+        });
+      }
+    }).catch(function(){
+      errIds.forEach(function(id){
+        var el=document.getElementById(id);
+        el.textContent='Restore failed.';
+        el.style.color='var(--err)';
+      });
+    });
+  }
+  function restoreHostname(skipConfirm){
+    if(!skipConfirm && !confirm('Restore hostname to default and reconnect? Continue?'))return;
+    fetch('cgi-bin/hostname_mac.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'restore_hostname=1'})
+    .then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      return r.text().then(function(t){return {ok:r.ok,text:t};});
+    }).then(function(res){
+      if(res===null)return;
+      var t=bodyText(res.text);
+      if(res.ok){
+        clearInput('hostname','…');
+        document.getElementById('msgHostname').textContent='Restored hostname to default.';
+        document.getElementById('msgHostname').style.color='var(--ok)';
+        closePalette('paletteHostmac');
+      }else{
+        document.getElementById('msgHostname').textContent=t||'Restore failed.';
+        document.getElementById('msgHostname').style.color='var(--err)';
+      }
+    }).catch(function(){document.getElementById('msgHostname').textContent='Restore failed.';document.getElementById('msgHostname').style.color='var(--err)';});
+  }
+  function restoreMac(iface,skipConfirm){
+    var msgId=iface==='wl1'?'msgMac5g':'msgMac5g';
+    if(!skipConfirm && !confirm('Restore '+iface+' MAC to default? Continue?'))return;
+    fetch('cgi-bin/hostname_mac.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'restore_mac='+encodeURIComponent(iface)})
+    .then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      return r.text().then(function(t){return {ok:r.ok,text:t};});
+    }).then(function(res){
+      if(res===null)return;
+      var t=bodyText(res.text);
+      if(res.ok){
+        var inputs=iface==='wl1'?['mac5g']:[];
+        inputs.forEach(function(inputId){
+          clearInput(inputId,'…');
+          var el=document.getElementById(msgIdFor(inputId));
+          el.textContent='Restored '+msgLabelFor(inputId)+' to default.';
+          el.style.color='var(--ok)';
+        });
+        closePalette('paletteHostmac');
+        showReconnectNotice();
+      }else{
+        document.getElementById(msgId).textContent=t||'Restore failed.';
+        document.getElementById(msgId).style.color='var(--err)';
+      }
+    }).catch(function(){document.getElementById(msgId).textContent='Restore failed.';document.getElementById(msgId).style.color='var(--err)';});
+  }
+  function msgIdFor(inputId){return inputId==='mac5g'?'msgMac5g':'msgMac5g';}
+  function msgLabelFor(inputId){return inputId==='mac5g'?'wl1 MAC':'wl1 MAC';}
+  function restoreHostmacAll(){
+    if(!confirm('Restore hostname + all MACs to default? Continue?'))return;
+    restoreHostname(true);
+    restoreMac('wl1',true);
+    closePalette('paletteHostmac');
+  }
+  function showReconnectNotice(){
+    closePalette('paletteSsid');
+    closePalette('paletteHostmac');
+    openPalette('paletteReconnect');
+  }
+  document.getElementById('connectBtn').addEventListener('click',function(){
+    if(!pending) return;
+    var pass=document.getElementById('pw').value;
+    if(pass.length<8||pass.length>63){connectLine.textContent='A WiFi password has 8 to 63 characters.';return;}
+    connect(pending.ssid,pending.sec,pass);
+  });
+  document.getElementById('rename2g').addEventListener('click',function(){renameAP(this);});
+  document.getElementById('rename5g').addEventListener('click',function(){renameAP(this);});
+  wireAccordion('connectUplinkHead','connectUplinkBody');
+  wireAccordion('changeSSIDHead','changeSSIDBody');
+  wireAccordion('hostmacHead','hostmacBody');
+  document.getElementById('btnHostname').addEventListener('click',function(){applyCurrent(this);});
+  document.getElementById('btnMac5g').addEventListener('click',function(){applyCurrent(this);});
+  document.getElementById('btnWpa2g').addEventListener('click',applyWPA);
+  document.getElementById('btnWpa2gShow').addEventListener('click',function(){
+    var t=wpa2g.type==='password'?'text':'password';
+    wpa2g.type=t;
+    this.textContent=t==='password'?'Show':'Hide';
+  });
+  document.getElementById('swAp2g').addEventListener('change',function(){
+    toggleAp('wl0.1', this, 'msgAp2g', this.checked);
+  });
+  document.getElementById('swAp5g').addEventListener('change',function(){
+    toggleAp('wl1', this, 'msgAp5g', this.checked);
+  });
+  wireAccordion('apToggleHead','apToggleBody');
+
+  // The restore buttons and palettes are parsed after this script, so wire them
+  // once the DOM is ready. Registering against them now would throw on null and
+  // kill the rest of this script (including the login form handler below).
+  function wirePalettes(){
+    var ssidBtn=document.getElementById('btnRestoreSsidHeader');
+    var hostBtn=document.getElementById('btnRestoreHostmacHeader');
+    if(ssidBtn)ssidBtn.addEventListener('click',function(e){e.stopPropagation();togglePalette('paletteSsid');});
+    if(hostBtn)hostBtn.addEventListener('click',function(e){e.stopPropagation();togglePalette('paletteHostmac');});
+
+    // Palette rows are divs; make them reachable and operable from the keyboard.
+    var items=document.querySelectorAll('.palette-item');
+    for(var i=0;i<items.length;i++){
+      (function(it){
+        it.setAttribute('tabindex','0');
+        it.setAttribute('role','button');
+        it.addEventListener('keydown',function(e){
+          if(e.key==='Enter'||e.key===' '){ e.preventDefault(); it.click(); }
+        });
+      })(items[i]);
+    }
+
+    document.addEventListener('click',function(e){
+      // Clicking the dimmed backdrop closes the palette
+      if(e.target.classList&&e.target.classList.contains('palette')){closePalette(e.target.id);return;}
+      // X close buttons and the Skip button
+      var closeBtn=e.target.closest('[data-action^="close-"]');
+      if(closeBtn){closePalette(closeBtn.getAttribute('data-action').replace('close-',''));return;}
+      var item=e.target.closest('.palette-item');
+      if(!item)return;
+      var action=item.getAttribute('data-action');
+      if(action==='restore-ssid-wl0.1-Ext')restoreSsid('wl0.1','Ext');
+      else if(action==='restore-ssid-wl1-Ext5G')restoreSsid('wl1','Ext5G');
+      else if(action==='restore-ssid-all-Ext / Ext5G')restoreSsid('all','Ext / Ext5G');
+      else if(action==='restore-hostname')restoreHostname();
+      else if(action==='restore-mac-wl1')restoreMac('wl1');
+      else if(action==='restore-hostmac-all')restoreHostmacAll();
+      else if(action==='restore-wpa-wl0.1'){
+        if(!confirm('Remove 2.4GHz WiFi password? Clients on that network will disconnect. Continue?'))return;
+        fetch('cgi-bin/wpa.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'restore_wpa_wl0.1=1'})
+        .then(function(r){if(r.status===401){showLogin('Session expired. Sign in again.');return null;} return r.text().then(function(t){return {ok:r.ok,text:t};});})
+        .then(function(res){
+          if(res===null)return;
+          var t=bodyText(res.text);
+          if(res.ok){
+            wpa2g.value='';
+            msgWpa2g.textContent='Removed 2.4GHz WiFi password.';
+            msgWpa2g.style.color='var(--ok)';
+            closePalette('paletteSsid');
+          }else{
+            msgWpa2g.textContent=t||'Remove failed.';
+            msgWpa2g.style.color='var(--err)';
+          }
+        }).catch(function(){msgWpa2g.textContent='Could not reach wpa.cgi.';msgWpa2g.style.color='var(--err)';});
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wirePalettes);
+  else wirePalettes();
+
+  document.getElementById('pwCancel').addEventListener('click',function(){
+    pwPane.classList.add('hidden'); pending=null;
+  });
+  document.getElementById('pwShow').addEventListener('change',function(){
+    document.getElementById('pw').type=this.checked?'text':'password';
+  });
+
+  document.getElementById('pingBtn').addEventListener('click',function(){
+    pingBox.innerHTML='';
+    pingLine.textContent='Testing…';
+    fetch('cgi-bin/ping.cgi').then(function(r){
+      if(r.status===401){showLogin('Session expired. Sign in again.');return null;}
+      if(!r.ok) throw new Error(r.status);
+      return r.text();
+    }).then(function(t){
+      if(t===null) return;
+      pingBox.innerHTML=guard(t);
+      pingLine.textContent='';
+    }).catch(function(){pingLine.textContent='Could not run the ping test.';});
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click',function(){
+    var spinner=this.querySelector('.refresh-spinner');
+    spinner.style.display='inline-block';
+    loadStatus();
+    setTimeout(function(){spinner.style.display='none';},2000);
+  });
+
+  // Strips the header lines BusyBox httpd may leave in the body, so the message
+  // survives whichever way the server forwards the CGI response.
+  function bodyText(t){
+    return (t||'').replace(/^(Content-Type|Status):[^\n]*\n?/gm,'').trim();
+  }
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    err.textContent='';
+    var u=document.getElementById('username').value;
+    var p=document.getElementById('password').value;
+    if(!u||!p){ err.textContent='Enter your username and password.'; return; }
+    fetch('cgi-bin/login.cgi',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'username='+encodeURIComponent(u)+'&password='+encodeURIComponent(p)})
+    .then(function(r){
+      return r.text().then(function(t){return {status:r.status,ok:r.ok,text:t};});
+    }).then(function(res){
+      if(res===null)return;
+      var msg=bodyText(res.text);
+      if(res.status===429){
+        err.textContent=msg||'Too many failed attempts. Try again later.';
+        return;
+      }
+      if(res.status===401||!msg||msg!=='OK'){
+        err.textContent=msg||'Wrong username or password.';
+        return;
+      }
+      document.getElementById('password').value='';
+      sessionLine.textContent='Signed in.';
+      probe();
+    }).catch(function(){
+      err.textContent='Could not reach login.cgi.';
+    });
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click',function(){
+    fetch('cgi-bin/logout.cgi',{method:'POST'}).then(function(){showLogin('Logged out.');}).catch(function(){showLogin('Logged out.');});
+  });
+
+  function probe(){
+    return fetch('cgi-bin/status.cgi').then(function(r){
+      if(!r.ok) throw new Error(r.status);
+      return r.text();
+    }).then(function(t){
+      box.innerHTML=guard(t);
+      line.textContent='Updated just now.';
+      line.style.color='var(--muted)';
+      showApp();
+      selectTab('dashboard');
+      loadCurrent();
+    }).catch(function(){
+      showLogin('');
+    });
+  }
+  probe();
+})();
+</script>
+
+  <!-- SSID Restore Palette -->
+  <div class="palette" id="paletteSsid" role="dialog" aria-modal="true" aria-label="Restore SSID" aria-hidden="true">
+    <div class="palette-panel">
+      <div class="palette-header">
+        <h3>Restore SSID</h3>
+        <button type="button" class="btn btn-icon btn-ghost palette-close" data-action="close-paletteSsid" aria-label="Close">✕</button>
+      </div>
+      <div class="palette-items">
+        <div class="palette-item" data-action="restore-ssid-wl0.1-Ext">
+          <span class="palette-item-label">Restore 2.4GHz SSID → Ext</span>
+          <span class="palette-item-desc">wl0.1 → default</span>
+        </div>
+        <div class="palette-divider"></div>
+        <div class="palette-item" data-action="restore-ssid-wl1-Ext5G">
+          <span class="palette-item-label">Restore 5GHz SSID → Ext5G</span>
+          <span class="palette-item-desc">wl1 → default</span>
+        </div>
+        <div class="palette-divider"></div>
+        <div class="palette-item" data-action="restore-ssid-all-Ext / Ext5G">
+          <span class="palette-item-label">Restore both SSIDs → Ext / Ext5G</span>
+          <span class="palette-item-desc">wl0.1 + wl1 → defaults</span>
+        </div>
+        <div class="palette-divider"></div>
+        <div class="palette-item" data-action="restore-wpa-wl0.1">
+          <span class="palette-item-label">Remove 2.4GHz WiFi password</span>
+          <span class="palette-item-desc">wl0.1 → open (no password)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hostname & MAC Restore Palette -->
+  <div class="palette" id="paletteHostmac" role="dialog" aria-modal="true" aria-label="Restore hostname and MAC" aria-hidden="true">
+    <div class="palette-panel">
+      <div class="palette-header">
+        <h3>Restore Hostname &amp; MAC</h3>
+        <button type="button" class="btn btn-icon btn-ghost palette-close" data-action="close-paletteHostmac" aria-label="Close">✕</button>
+      </div>
+      <div class="palette-items">
+        <div class="palette-item" data-action="restore-hostname">
+          <span class="palette-item-label">Restore Hostname → default</span>
+          <span class="palette-item-desc">Clear saved hostname</span>
+        </div>
+        <div class="palette-divider"></div>
+        <div class="palette-item" data-action="restore-mac-wl1">
+          <span class="palette-item-label">Restore wl1 MAC → default</span>
+          <span class="palette-item-desc">5GHz AP</span>
+        </div>
+        <div class="palette-divider"></div>
+        <div class="palette-item" data-action="restore-hostmac-all">
+          <span class="palette-item-label">Restore Hostname + MAC → default</span>
+          <span class="palette-item-desc">hostname + wl1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reconnect notice (shown after a MAC change or restore) -->
+  <div class="palette" id="paletteReconnect" role="dialog" aria-modal="true" aria-label="Reconnect required" aria-hidden="true">
+    <div class="palette-panel">
+      <div class="palette-header">
+        <h3>Reconnect Required</h3>
+        <button type="button" class="btn btn-icon btn-ghost palette-close" data-action="close-paletteReconnect" aria-label="Close">✕</button>
+      </div>
+      <p class="palette-message">Please reconnect to apply changes.</p>
+      <div class="palette-footer">
+        <button class="btn btn-secondary" data-action="close-paletteReconnect">OK</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
